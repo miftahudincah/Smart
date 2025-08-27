@@ -3,191 +3,248 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat WA Style Modern</title>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<title>Trainer Panel Surya Realistis</title>
 <style>
-  body { font-family: Arial,sans-serif; margin:0; padding:0; background:#ece5dd; }
-  #auth, #contactsPage, #chatPage { max-width:400px; margin:50px auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
-  input, button { width:100%; padding:10px; margin:5px 0; border-radius:5px; border:1px solid #ccc; font-size:16px; }
-  button { cursor:pointer; background:#075e54; color:#fff; border:none; transition:0.2s; }
-  button:hover { background:#0b7d6e; }
-
-  #contactsPage, #chatPage { display:none; height:600px; }
-  #contacts { max-height:500px; overflow-y:auto; margin-top:10px; }
-  .contact { padding:12px; border-bottom:1px solid #ddd; cursor:pointer; }
-  .contact:hover { background:#f0f0f0; }
-
-  #chatPage { display:flex; flex-direction:column; }
-  .chat-header { display:flex; align-items:center; background:#075e54; color:#fff; padding:10px; }
-  .back-btn { margin-right:10px; cursor:pointer; }
-  #chatWithTitle { font-size:18px; }
-  #messages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; background:#e5ddd5; }
-  .message { padding:10px 15px; margin:5px; border-radius:20px; max-width:70%; word-wrap:break-word; position:relative; font-size:15px; line-height:1.4; }
-  .me { background:#dcf8c6; margin-left:auto; }
-  .other { background:#fff; margin-right:auto; }
-  .timestamp { font-size:11px; color:#666; display:block; margin-top:4px; text-align:right; }
-  .delete-btn { position:absolute; top:2px; right:5px; font-size:10px; background:red; color:#fff; border:none; border-radius:5px; padding:2px 5px; cursor:pointer; }
-
-  #inputArea { display:flex; padding:10px; background:#f0f0f0; border-top:1px solid #ddd; gap:8px; }
-  #messageInput { flex:1; border-radius:25px; border:1px solid #ccc; padding:10px 15px; font-size:16px; }
-  #sendBtn { border-radius:50%; width:45px; height:45px; font-size:20px; background:#075e54; color:#fff; border:none; cursor:pointer; }
+  body {
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#87ceeb;
+    transition: background 1s;
+  }
+  #sky {
+    position:relative;
+    width:100%;
+    height:300px;
+    overflow:hidden;
+  }
+  #sun {
+    position:absolute;
+    width:80px;
+    height:80px;
+    border-radius:50%;
+    background:yellow;
+    top:100px;
+    left:0;
+    transition: all 2s linear;
+  }
+  #clouds {
+    position:absolute;
+    top:20px;
+    left:0;
+    width:100%;
+    height:100px;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .cloud {
+    position:absolute;
+    width:120px;
+    height:60px;
+    background:#fff;
+    border-radius:60px;
+    opacity:0.8;
+    animation: cloudMove 60s linear infinite;
+  }
+  @keyframes cloudMove {
+    from {left:-200px;}
+    to {left:100%;}
+  }
+  #rain {
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+    pointer-events:none;
+    display:none;
+  }
+  .drop {
+    position:absolute;
+    width:2px;
+    height:10px;
+    background:blue;
+    animation: dropFall 1s linear infinite;
+  }
+  @keyframes dropFall {
+    from {top:-10px;}
+    to {top:300px;}
+  }
+  #controls, #data, #notes {
+    padding:15px;
+    background:#fff;
+    margin:10px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+  }
+  button {
+    margin:5px;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    background:#007bff;
+    color:white;
+  }
+  button:hover {
+    background:#0056b3;
+  }
+  h2 {
+    margin-top:0;
+  }
 </style>
 </head>
 <body>
 
-<!-- Login -->
-<div id="auth">
-  <h2>Login / Register</h2>
-  <input type="text" id="username" placeholder="Username">
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="authUser()">Masuk / Daftar</button>
+<div id="sky">
+  <div id="sun"></div>
+  <div id="clouds"></div>
+  <div id="rain"></div>
 </div>
 
-<!-- Daftar Kontak -->
-<div id="contactsPage">
-  <h2>Daftar Kontak</h2>
-  <input type="text" id="newContact" placeholder="Tambah kontak baru">
-  <button onclick="addContact()">Tambah</button>
-  <div id="contacts"></div>
-  <button style="margin-top:10px;background:#b00020;" onclick="logout()">Logout</button>
+<div id="controls">
+  <h2>Kontrol</h2>
+  <button onclick="sambungBaterai()">Sambungkan Baterai</button>
+  <button onclick="sambungInverter()">Sambungkan Inverter</button>
+  <button onclick="tesBeban()">Tes Beban</button>
+  <button onclick="toggleAuto()">Otomatis Panel</button>
 </div>
 
-<!-- Halaman Chat -->
-<div id="chatPage">
-  <div class="chat-header">
-    <span class="back-btn" onclick="backToContacts()">⬅</span>
-    <span id="chatWithTitle"></span>
-  </div>
-  <div id="messages"></div>
-  <div id="inputArea">
-    <input type="text" id="messageInput" placeholder="Ketik pesan...">
-    <button id="sendBtn" onclick="sendMessage()">📩</button>
-  </div>
+<div id="data">
+  <h2>Data Sistem</h2>
+  <p>Voltage Panel: <span id="vPanel">0</span> V</p>
+  <p>Voltage Baterai: <span id="vBatt">12</span> V</p>
+  <p>Arus Beban: <span id="amp">0</span> A</p>
+  <p>Sisa Baterai: <span id="battPerc">100</span>%</p>
+  <p>Cuaca: <span id="weather">Cerah</span></p>
+  <p>Waktu: <span id="timeOfDay">Pagi</span></p>
+</div>
+
+<div id="notes">
+  <h2>Catatan Pembelajaran</h2>
+  <ul>
+    <li>Panel surya menghasilkan listrik tergantung intensitas cahaya matahari dan kondisi cuaca.</li>
+    <li>Baterai menyimpan energi dari panel untuk digunakan saat matahari redup atau malam hari.</li>
+    <li>Inverter diperlukan untuk mengubah arus DC menjadi AC agar bisa dipakai perangkat rumah tangga.</li>
+    <li>Beban akan menguras baterai, terutama saat cuaca buruk produksi panel berkurang.</li>
+    <li>Mode otomatis membuat panel mengikuti posisi matahari untuk efisiensi maksimal.</li>
+  </ul>
 </div>
 
 <script>
-  const firebaseConfig = { databaseURL: "https://esp8266-8353a-default-rtdb.firebaseio.com/" };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+let vBatt = 12;
+let battPerc = 100;
+let vPanel = 0;
+let ampLoad = 0;
+let bateraiOn = false;
+let inverterOn = false;
+let autoOn = false;
+let sun = document.getElementById("sun");
+let timePhase = 0; // 0 pagi, 1 siang, 2 sore, 3 malam
+let weather = "Cerah";
 
-  let currentUser = null;
-  let chatWith = null;
+// Fungsi kontrol
+function sambungBaterai(){ bateraiOn = true; alert("Baterai tersambung"); }
+function sambungInverter(){ inverterOn = true; alert("Inverter tersambung"); }
+function tesBeban(){
+  if(!inverterOn){ alert("Gagal! Inverter belum tersambung"); return; }
+  ampLoad = Math.floor(Math.random()*5)+1;
+  battPerc -= ampLoad*2;
+  if(battPerc<0) battPerc=0;
+  updateData();
+}
 
-  // Login / Register
-  function authUser() {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-    if(!username || !password){ alert("Isi semua data!"); return; }
+// Toggle panel otomatis
+function toggleAuto(){
+  autoOn = !autoOn;
+  alert("Panel otomatis: "+(autoOn?"ON":"OFF"));
+}
 
-    db.ref('users/'+username).get().then(s=>{
-      if(s.exists()){
-        if(s.val().password===password){
-          loginSuccess(username);
-        } else { alert("Password salah!"); }
-      } else {
-        db.ref('users/'+username).set({password});
-        alert("Registrasi berhasil!");
-        loginSuccess(username);
-      }
-    });
+// Simulasi cuaca random
+function randomWeather(){
+  let rnd = Math.random();
+  if(rnd<0.6) weather = "Cerah";
+  else if(rnd<0.85) weather = "Mendung";
+  else weather = "Hujan";
+}
+
+// Render cuaca
+function renderWeather(){
+  document.getElementById("weather").innerText = weather;
+  let rain = document.getElementById("rain");
+  let clouds = document.getElementById("clouds");
+  clouds.innerHTML="";
+  rain.innerHTML="";
+  if(weather==="Mendung"||weather==="Hujan"){
+    let c=document.createElement("div");
+    c.className="cloud";
+    clouds.appendChild(c);
+  }
+  if(weather==="Hujan"){
+    rain.style.display="block";
+    for(let i=0;i<50;i++){
+      let d=document.createElement("div");
+      d.className="drop";
+      d.style.left=Math.random()*window.innerWidth+"px";
+      d.style.animationDuration=(0.5+Math.random())+"s";
+      rain.appendChild(d);
+    }
+  } else {
+    rain.style.display="none";
+  }
+}
+
+// Simulasi pergerakan matahari
+function moveSun(){
+  let sky=document.getElementById("sky");
+  let phases=["Pagi","Siang","Sore","Malam"];
+  document.getElementById("timeOfDay").innerText=phases[timePhase];
+  
+  if(timePhase===0){ // pagi
+    sun.style.left="10%";
+    sun.style.top="120px";
+    vPanel=weather==="Cerah"?15:weather==="Mendung"?8:3;
+  }else if(timePhase===1){ // siang
+    sun.style.left="50%";
+    sun.style.top="50px";
+    vPanel=weather==="Cerah"?18:weather==="Mendung"?10:5;
+  }else if(timePhase===2){ // sore
+    sun.style.left="80%";
+    sun.style.top="120px";
+    vPanel=weather==="Cerah"?12:weather==="Mendung"?6:2;
+  }else{ // malam
+    sun.style.left="90%";
+    sun.style.top="200px";
+    vPanel=0;
   }
 
-  function loginSuccess(username){
-    currentUser=username;
-    document.getElementById('auth').style.display='none';
-    document.getElementById('contactsPage').style.display='block';
-    loadContacts();
+  if(bateraiOn){
+    battPerc += vPanel*0.05; // charging
+    if(ampLoad>0) battPerc -= ampLoad*0.5; // beban menguras
+    if(weather==="Hujan") battPerc -= 0.2; // cuaca buruk mengurangi
+    if(battPerc>100) battPerc=100;
+    if(battPerc<0) battPerc=0;
   }
+  updateData();
+  timePhase=(timePhase+1)%4;
+}
 
-  function logout(){
-    currentUser=null;
-    document.getElementById('auth').style.display='block';
-    document.getElementById('contactsPage').style.display='none';
-    document.getElementById('chatPage').style.display='none';
-  }
+// Update data
+function updateData(){
+  document.getElementById("vPanel").innerText=vPanel.toFixed(1);
+  document.getElementById("vBatt").innerText=vBatt.toFixed(1);
+  document.getElementById("amp").innerText=ampLoad;
+  document.getElementById("battPerc").innerText=battPerc.toFixed(1);
+}
 
-  // Tambah kontak
-  function addContact(){
-    const contact = document.getElementById('newContact').value.trim();
-    if(!contact || contact===currentUser){ alert("Nama tidak valid"); return; }
-    db.ref('users/'+contact).get().then(s=>{
-      if(!s.exists()){ alert("User tidak ditemukan"); }
-      else {
-        db.ref('contacts/'+currentUser+'/'+contact).set(true);
-        document.getElementById('newContact').value='';
-      }
-    });
-  }
+// Loop otomatis
+setInterval(()=>{
+  randomWeather();
+  renderWeather();
+  moveSun();
+},5000);
 
-  // Load daftar kontak
-  function loadContacts(){
-    const contactsDiv = document.getElementById('contacts');
-    db.ref('contacts/'+currentUser).on('value',snap=>{
-      contactsDiv.innerHTML='';
-      snap.forEach(s=>{
-        const contact = s.key;
-        const div = document.createElement('div');
-        div.className='contact';
-        div.textContent=contact;
-        div.onclick=()=>openChat(contact);
-        contactsDiv.appendChild(div);
-      });
-    });
-  }
-
-  // Buka chat
-  function openChat(user){
-    chatWith=user;
-    document.getElementById('contactsPage').style.display='none';
-    document.getElementById('chatPage').style.display='flex';
-    document.getElementById('chatWithTitle').textContent="Chat dengan "+user;
-
-    const chatId=[currentUser,chatWith].sort().join('_');
-    const msgsDiv=document.getElementById('messages');
-    msgsDiv.innerHTML='';
-    db.ref('chats/'+chatId).on('value',snap=>{
-      msgsDiv.innerHTML='';
-      snap.forEach(s=>{
-        const data=s.val();
-        const msgDiv=document.createElement('div');
-        msgDiv.className='message '+(data.sender===currentUser?'me':'other');
-        const date=new Date(data.timestamp);
-        const time=date.getHours().toString().padStart(2,'0')+':'+date.getMinutes().toString().padStart(2,'0');
-        msgDiv.innerHTML=`<span>${data.message}</span><span class="timestamp">${time}</span>`;
-        if(data.sender===currentUser){
-          const delBtn=document.createElement('button');
-          delBtn.className='delete-btn';
-          delBtn.textContent='Hapus';
-          delBtn.onclick=()=>db.ref('chats/'+chatId+'/'+s.key).remove();
-          msgDiv.appendChild(delBtn);
-        }
-        msgsDiv.appendChild(msgDiv);
-      });
-      msgsDiv.scrollTop=msgsDiv.scrollHeight;
-    });
-  }
-
-  // Kembali ke daftar kontak
-  function backToContacts(){
-    chatWith=null;
-    document.getElementById('chatPage').style.display='none';
-    document.getElementById('contactsPage').style.display='block';
-    document.getElementById('messages').innerHTML='';
-  }
-
-  // Kirim pesan
-  function sendMessage(){
-    const msg=document.getElementById('messageInput').value.trim();
-    if(!msg || !chatWith){ return; }
-    const chatId=[currentUser,chatWith].sort().join('_');
-    db.ref('chats/'+chatId).push({
-      sender:currentUser,
-      message:msg,
-      timestamp:Date.now()
-    });
-    document.getElementById('messageInput').value='';
-  }
+updateData();
 </script>
+
 </body>
-  </html>
+</html>
