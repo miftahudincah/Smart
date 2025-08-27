@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat WA Style Modern</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+  body { font-family: Arial,sans-serif; margin:0; padding:0; background:#ece5dd; }
+  #auth, #contactsPage, #chatPage { max-width:400px; margin:50px auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+  input, button { width:100%; padding:10px; margin:5px 0; border-radius:5px; border:1px solid #ccc; font-size:16px; }
+  button { cursor:pointer; background:#075e54; color:#fff; border:none; transition:0.2s; }
+  button:hover { background:#0b7d6e; }
+
+  #contactsPage, #chatPage { display:none; height:600px; }
+  #contacts { max-height:500px; overflow-y:auto; margin-top:10px; }
+  .contact { padding:12px; border-bottom:1px solid #ddd; cursor:pointer; }
+  .contact:hover { background:#f0f0f0; }
+
+  #chatPage { display:flex; flex-direction:column; }
+  .chat-header { display:flex; align-items:center; background:#075e54; color:#fff; padding:10px; }
+  .back-btn { margin-right:10px; cursor:pointer; }
+  #chatWithTitle { font-size:18px; }
+  #messages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; background:#e5ddd5; }
+  .message { padding:10px 15px; margin:5px; border-radius:20px; max-width:70%; word-wrap:break-word; position:relative; font-size:15px; line-height:1.4; }
+  .me { background:#dcf8c6; margin-left:auto; }
+  .other { background:#fff; margin-right:auto; }
+  .timestamp { font-size:11px; color:#666; display:block; margin-top:4px; text-align:right; }
+  .delete-btn { position:absolute; top:2px; right:5px; font-size:10px; background:red; color:#fff; border:none; border-radius:5px; padding:2px 5px; cursor:pointer; }
+
+  #inputArea { display:flex; padding:10px; background:#f0f0f0; border-top:1px solid #ddd; gap:8px; }
+  #messageInput { flex:1; border-radius:25px; border:1px solid #ccc; padding:10px 15px; font-size:16px; }
+  #sendBtn { border-radius:50%; width:45px; height:45px; font-size:20px; background:#075e54; color:#fff; border:none; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="auth">
+  <h2>Login / Register</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="authUser()">Masuk / Daftar</button>
+</div>
+
+<!-- Daftar Kontak -->
+<div id="contactsPage">
+  <h2>Daftar Kontak</h2>
+  <input type="text" id="newContact" placeholder="Tambah kontak baru">
+  <button onclick="addContact()">Tambah</button>
+  <div id="contacts"></div>
+  <button style="margin-top:10px;background:#b00020;" onclick="logout()">Logout</button>
+</div>
+
+<!-- Halaman Chat -->
+<div id="chatPage">
+  <div class="chat-header">
+    <span class="back-btn" onclick="backToContacts()">⬅</span>
+    <span id="chatWithTitle"></span>
+  </div>
+  <div id="messages"></div>
+  <div id="inputArea">
+    <input type="text" id="messageInput" placeholder="Ketik pesan...">
+    <button id="sendBtn" onclick="sendMessage()">📩</button>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = { databaseURL: "https://esp8266-8353a-default-rtdb.firebaseio.com/" };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let currentUser = null;
+  let chatWith = null;
+
+  // Login / Register
+  function authUser() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if(!username || !password){ alert("Isi semua data!"); return; }
+
+    db.ref('users/'+username).get().then(s=>{
+      if(s.exists()){
+        if(s.val().password===password){
+          loginSuccess(username);
+        } else { alert("Password salah!"); }
+      } else {
+        db.ref('users/'+username).set({password});
+        alert("Registrasi berhasil!");
+        loginSuccess(username);
+      }
+    });
+  }
+
+  function loginSuccess(username){
+    currentUser=username;
+    document.getElementById('auth').style.display='none';
+    document.getElementById('contactsPage').style.display='block';
+    loadContacts();
+  }
+
+  function logout(){
+    currentUser=null;
+    document.getElementById('auth').style.display='block';
+    document.getElementById('contactsPage').style.display='none';
+    document.getElementById('chatPage').style.display='none';
+  }
+
+  // Tambah kontak
+  function addContact(){
+    const contact = document.getElementById('newContact').value.trim();
+    if(!contact || contact===currentUser){ alert("Nama tidak valid"); return; }
+    db.ref('users/'+contact).get().then(s=>{
+      if(!s.exists()){ alert("User tidak ditemukan"); }
+      else {
+        db.ref('contacts/'+currentUser+'/'+contact).set(true);
+        document.getElementById('newContact').value='';
+      }
+    });
+  }
+
+  // Load daftar kontak
+  function loadContacts(){
+    const contactsDiv = document.getElementById('contacts');
+    db.ref('contacts/'+currentUser).on('value',snap=>{
+      contactsDiv.innerHTML='';
+      snap.forEach(s=>{
+        const contact = s.key;
+        const div = document.createElement('div');
+        div.className='contact';
+        div.textContent=contact;
+        div.onclick=()=>openChat(contact);
+        contactsDiv.appendChild(div);
+      });
+    });
+  }
+
+  // Buka chat
+  function openChat(user){
+    chatWith=user;
+    document.getElementById('contactsPage').style.display='none';
+    document.getElementById('chatPage').style.display='flex';
+    document.getElementById('chatWithTitle').textContent="Chat dengan "+user;
+
+    const chatId=[currentUser,chatWith].sort().join('_');
+    const msgsDiv=document.getElementById('messages');
+    msgsDiv.innerHTML='';
+    db.ref('chats/'+chatId).on('value',snap=>{
+      msgsDiv.innerHTML='';
+      snap.forEach(s=>{
+        const data=s.val();
+        const msgDiv=document.createElement('div');
+        msgDiv.className='message '+(data.sender===currentUser?'me':'other');
+        const date=new Date(data.timestamp);
+        const time=date.getHours().toString().padStart(2,'0')+':'+date.getMinutes().toString().padStart(2,'0');
+        msgDiv.innerHTML=`<span>${data.message}</span><span class="timestamp">${time}</span>`;
+        if(data.sender===currentUser){
+          const delBtn=document.createElement('button');
+          delBtn.className='delete-btn';
+          delBtn.textContent='Hapus';
+          delBtn.onclick=()=>db.ref('chats/'+chatId+'/'+s.key).remove();
+          msgDiv.appendChild(delBtn);
+        }
+        msgsDiv.appendChild(msgDiv);
+      });
+      msgsDiv.scrollTop=msgsDiv.scrollHeight;
+    });
+  }
+
+  // Kembali ke daftar kontak
+  function backToContacts(){
+    chatWith=null;
+    document.getElementById('chatPage').style.display='none';
+    document.getElementById('contactsPage').style.display='block';
+    document.getElementById('messages').innerHTML='';
+  }
+
+  // Kirim pesan
+  function sendMessage(){
+    const msg=document.getElementById('messageInput').value.trim();
+    if(!msg || !chatWith){ return; }
+    const chatId=[currentUser,chatWith].sort().join('_');
+    db.ref('chats/'+chatId).push({
+      sender:currentUser,
+      message:msg,
+      timestamp:Date.now()
+    });
+    document.getElementById('messageInput').value='';
+  }
+</script>
+</body>
+  </html>
